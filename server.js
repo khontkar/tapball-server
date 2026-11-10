@@ -15,10 +15,23 @@ const rooms = new Map();   // ad -> Map(id -> client)
 const queue = [];          // {c, t0}
 const stats = { conn: 0, matches: 0, started: Date.now() };
 
+// oyunun kendisi de buradan açılabilir (test için): index.html + three.min.js aynı klasörde ise
+const fs = require('fs'), path = require('path'), zlib = require('zlib');
+const FILES = { '/': ['index.html', 'text/html; charset=utf-8'], '/index.html': ['index.html', 'text/html; charset=utf-8'], '/three.min.js': ['three.min.js', 'text/javascript; charset=utf-8'] };
+const cache = {};
+for (const k in FILES) { try { const raw = fs.readFileSync(path.join(__dirname, FILES[k][0])); cache[k] = { raw, gz: zlib.gzipSync(raw, { level: 9 }) }; } catch (e) {} }
 const server = http.createServer((req, res) => {
-  if (req.url === '/health') { res.writeHead(200, { 'Content-Type': 'text/plain' }); return res.end('ok'); }
-  res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Access-Control-Allow-Origin': '*' });
-  res.end(`Tapball server · online ${stats.conn} · queue ${queue.length} · rooms ${rooms.size} · matches ${stats.matches}`);
+  const url = (req.url || '/').split('?')[0];
+  if (url === '/health') { res.writeHead(200, { 'Content-Type': 'text/plain' }); return res.end('ok'); }
+  if (url === '/status' || (url === '/' && !cache['/'])) {
+    res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Access-Control-Allow-Origin': '*' });
+    return res.end(`Tapball server · online ${stats.conn} · queue ${queue.length} · rooms ${rooms.size} · matches ${stats.matches}`);
+  }
+  const f = cache[url];
+  if (!f) { res.writeHead(404, { 'Content-Type': 'text/plain' }); return res.end('not found'); }
+  const gz = /\bgzip\b/.test(req.headers['accept-encoding'] || '');
+  res.writeHead(200, { 'Content-Type': FILES[url][1], 'Cache-Control': url === '/three.min.js' ? 'public, max-age=86400' : 'no-cache', ...(gz ? { 'Content-Encoding': 'gzip' } : {}) });
+  res.end(gz ? f.gz : f.raw);
 });
 
 server.on('upgrade', (req, sock) => {
