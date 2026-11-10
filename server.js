@@ -1,13 +1,13 @@
 // Tapball oyun sunucusu — bağımlılıksız (yalnızca Node.js), WebSocket röle + eşleştirme
 // Odalar: her oyuncunun "presence" durumu odadaki herkese iletilir (maçı lider oyuncu yönetir).
-// Eşleştirme: 6 kişi olursa hemen; 15 sn sonra en az 2 gerçek oyuncu varsa onlarla başlar
+// Eşleştirme: 6 kişi olursa hemen; 10 sn sonra en az 2 gerçek oyuncu varsa onlarla başlar
 // (eksikler lider tarafında botla doldurulur); tek kalan oyuncuya "solo" denir, botlarla oynar.
 'use strict';
 const http = require('http');
 const crypto = require('crypto');
 
 const PORT = process.env.PORT || 8080;
-const MAX_MSG = 64 * 1024, MAX_ROOM = 8, WAIT_MS = 15000, MAX_MATCH = 6;
+const MAX_MSG = 64 * 1024, MAX_ROOM = 8, WAIT_MS = 10000, MAX_MATCH = 6;
 const GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 
 let nextId = 1;
